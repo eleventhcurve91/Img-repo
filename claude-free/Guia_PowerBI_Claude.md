@@ -6,30 +6,30 @@
 > Esta guía construye el informe completo con **7 prompts dentro de un mismo chat** de Claude Desktop. Cada prompt trae los nombres de columnas, el código DAX y las coordenadas de los visuales, de modo que Claude trabaja directo sobre el modelo y los archivos del informe.
 >
 > **Requisitos previos (secciones anteriores del manual):** Node.js, `claude_desktop_config.json` con los servidores `powerbi-modeling-mcp` y `archivos`, la API local de Power BI y el proyecto guardado como `EcoBici_Lima.pbip` dentro de la carpeta de trabajo.
->
-> Todos los prompts se ejecutaron sobre `EcoBici_Lima.pbip` con Power BI abierto; las capturas de cada paso son de esa ejecución.
 
 <!--CELL-->
 
 ## **Paso 0. Reglas de trabajo**
 
-1. **Todo en un mismo chat.** Pega el prompt 1, espera la respuesta, pega el 2, y así hasta el 7. Las reglas que se dan en un prompt sirven para los siguientes, por eso los últimos prompts son más cortos.
-2. **Espera a que Claude termine** antes de pegar el siguiente prompt.
-3. **Desactiva lo que no se usa** (icono de herramientas / **+** junto al cuadro de texto): búsqueda web y cualquier conector que no sea `powerbi-modeling-mcp` o `archivos`.
-4. Cuando Claude pida permiso para usar una herramienta, pulsa **Permitir siempre**.
-5. **Power BI siempre abierto.** En los prompts 4 a 7 (páginas), **guarda con `Ctrl + S` antes de pegar el prompt**. Cuando Claude termine, Power BI muestra una barra de cambios en los archivos del informe: pulsa **Apply external changes** (*Aplicar cambios externos*). No guardes en Power BI mientras Claude está escribiendo.
+1. **Todo en un mismo chat.** Pegar el prompt 1, esperar la respuesta, pegar el 2, y así hasta el 7. Las reglas que se dan en un prompt sirven para los siguientes, por eso los últimos prompts son más cortos.
+2. **Esperar a que Claude termine** antes de pegar el siguiente prompt.
+3. **Desactivar lo que no se usa** (icono de herramientas / **+** junto al cuadro de texto): búsqueda web y cualquier conector que no sea `powerbi-modeling-mcp` o `archivos`.
+4. Cuando Claude pida permiso para usar una herramienta, pulsar **Permitir siempre**.
+5. **Power BI siempre abierto.** En los prompts 4 a 7 (páginas), **guardar con `Ctrl + S` antes de pegar el prompt** y no guardar mientras Claude está escribiendo.
+
+> **Fundamento de Ingeniería:**
+> Un único chat conserva el contexto: las reglas PBIR y los nombres del modelo se explican una sola vez y los prompts siguientes las reutilizan. Pedir operaciones agrupadas (listas) reduce el número de llamadas a las herramientas MCP y, con ello, el tiempo de respuesta.
 
 <!--CELL-->
 
 ## **Prompt 1. Conexión MCP y Perfilado de Datos**
 
-Manteniendo abierta la instancia de Power BI Desktop con `EcoBici_Lima.pbip`:
-1. Abrir **Claude Desktop** en la vista de **chat**.
-2. Comprobar en **Ajustes → Desarrollador** que `powerbi-modeling-mcp` y `archivos` están en **Running**.
-3. **Nuevo chat** → pegar el prompt 1. **Este chat se usa para toda la guía.**
+1. Abrir `EcoBici_Lima.pbip` en Power BI Desktop y mantenerlo abierto.
 
-El chat de Claude no puede abrir los `.xlsx` (son binarios), así que el prompt le entrega su estructura y solo le pide leer los CSV, que son texto.
+2. En Claude Desktop, ir a **Ajustes → Desarrollador** y comprobar que `powerbi-modeling-mcp` y `archivos` están en **Running**.
+> ![Estado Running de los servidores MCP](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-powerbi-mcp/09-mcp-running.png)
 
+3. Abrir un **chat nuevo** (este chat se usa para toda la guía) y pegar el prompt:
 ```text
 Vamos a construir en este chat un informe de Power BI completo usando solo las herramientas MCP (powerbi-modeling-mcp y archivos). Reglas para todo el chat: trabaja directo, no uses la operación Help, agrupa en una sola llamada todo lo que la herramienta permita (listas), no muestres código ni JSON y responde siempre en pocas líneas.
 
@@ -41,22 +41,20 @@ Vamos a construir en este chat un informe de Power BI completo usando solo las h
 Responde con: nombre del modelo conectado y un resumen de calidad de datos en máximo 10 viñetas (problema → transformación propuesta) más el esquema en estrella propuesto en 3 líneas.
 ```
 
-### **Verificación:**
-* Claude confirma el modelo conectado (puerto local de Analysis Services).
-* El resumen menciona: hojas por año en `Viajes.xlsx` y fechas en texto `dd/mm/aaaa`; `Distrito` sucio en las estaciones (espacios y mayúsculas: `MIRAFLORES`, `  Cercado de Lima `) que se cruza con `Mapa_Zonas`; `Genero` con códigos y vacíos que requieren *No especificado*; `RegistroInterno` y `Notas` sobrantes.
+4. Verificar que Claude confirma la conexión con el modelo de Power BI (puerto local de Analysis Services).
+> ![Confirmación de conexión en Claude Desktop](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/17.png)
 
-> ![Confirmación de Conexión en Claude Desktop](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/17.png)
-> * **Descripción:** Respuesta de Claude confirmando el acoplamiento con la instancia local de Power BI mediante MCP.
+5. Revisar el resumen de calidad: debe mencionar las hojas por año de `Viajes.xlsx`, las fechas en texto `dd/mm/aaaa`, el `Distrito` con espacios y mayúsculas distintas (`MIRAFLORES`, `  Cercado de Lima `), el `Genero` con códigos y vacíos, y las columnas sobrantes `Notas` y `RegistroInterno`.
+> ![Resumen de calidad de datos en Claude](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/18.png)
 
-> ![Reporte de Perfilado de Calidad en Claude](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/18.png)
-> * **Descripción:** Diagnóstico de calidad de datos y propuesta de arquitectura dimensional.
+> **Fundamento de Ingeniería:**
+> El servidor MCP localiza el puerto dinámico de la instancia de Analysis Services que Power BI Desktop levanta en segundo plano. Los archivos `.xlsx` son binarios y el servidor `archivos` solo lee texto; por eso el prompt entrega su estructura y Claude solo perfila los CSV. Detectar los problemas antes de modelar evita reprocesar tablas después.
 
 <!--CELL-->
 
 ## **Prompt 2. Modelo Dimensional Completo (Esquema en Estrella)**
 
-En un solo prompt se crean el parámetro `RutaDatos`, las cinco tablas y las relaciones.
-
+1. En el mismo chat, pegar el prompt:
 ```text
 Genera el modelo de datos en el Power BI abierto:
 1) Parámetro de Power Query "RutaDatos" (texto, obligatorio) = ruta absoluta de la carpeta Datos_Fuente terminada en "\" (obtenla con list_allowed_directories de la herramienta de archivos). Todas las tablas leen desde RutaDatos.
@@ -73,21 +71,23 @@ Notas para las herramientas: crea RutaDatos con named_expression_operations Crea
 Si algo falla, corrígelo tú. Responde solo con: filas de cada tabla y relaciones (activa/inactiva).
 ```
 
-### **Validación de Arquitectura en Power BI:**
-1. Cambiar a la **Vista de modelo**.
-2. `fctViajes` en el centro con relaciones `1:*` hacia `dimEstaciones`, `dimUsuarios`, `dimBicicletas` y `dimFecha`.
-3. La relación `IdEstacionDestino → dimEstaciones` aparece como **línea punteada** (inactiva).
-4. Guardar con `Ctrl + S`.
+2. Claude responde con las filas de cada tabla: `fctViajes` 6.200, `dimEstaciones` 24, `dimUsuarios` 500, `dimBicicletas` 120 y `dimFecha` 1.096.
 
-> ![Diagrama de Modelo en Estrella en Power BI](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-02-modelo-estrella.png)
-> * **Descripción:** Vista de modelo con `fctViajes` en el núcleo y las dimensiones `dimEstaciones`, `dimUsuarios`, `dimBicicletas` y `dimFecha` conectadas.
+3. Si en Power BI aparece la barra *"One or more relationships have been modified and need to be refreshed manually"*, pulsar **Refresh now**.
+
+4. Cambiar a la **Vista de modelo** (tercer icono de la barra izquierda) y arrastrar las tablas para dejar `fctViajes` en el centro. La relación `IdEstacionDestino → dimEstaciones` aparece como **línea punteada** (inactiva).
+> ![Vista de modelo con el esquema en estrella](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-02-modelo-estrella.png)
+
+5. Guardar con `Ctrl + S`.
+
+> **Fundamento de Ingeniería:**
+> El esquema en estrella separa los **hechos** (`fct`, cada viaje) de las **dimensiones** (`dim`, quién, qué, dónde y cuándo). Las relaciones `1:*` filtran desde la dimensión hacia los hechos. Entre dos tablas solo puede haber una relación activa; la de estación de destino queda inactiva y se activa dentro de una medida con `USERELATIONSHIP`. Marcar `dimFecha` como tabla de fechas habilita las funciones de inteligencia de tiempo (`TOTALYTD`, `DATEADD`, `DATESINPERIOD`). El parámetro `RutaDatos` permite mover la carpeta cambiando un solo valor.
 
 <!--CELL-->
 
 ## **Prompt 3. Medidas DAX en Tabla Dedicada**
 
-Las 16 medidas en la tabla `_Medidas` con sus carpetas (*Display Folders*). El DAX viene listo, así Claude solo lo crea.
-
+1. En el mismo chat, pegar el prompt:
 ```text
 Crea una tabla calculada "_Medidas" = {BLANK()} con su columna oculta, y en ella estas medidas EXACTAS en UNA sola llamada de measure_operations (displayFolder entre corchetes; formato después de "|"):
 [Base]
@@ -112,22 +112,32 @@ Var. % Viajes vs Mes Anterior = VAR U = MAX(fctViajes[FechaInicio]) VAR Ini = DA
 Si "Eléctrica" no coincide con los valores de dimBicicletas[Tipo], ajústalo. Responde solo con el valor sin filtros de Total Viajes, % Viajes Eléctricos y Var. % Viajes vs AA.
 ```
 
-### **Protocolo de Sincronización:**
-Guardar con `Ctrl + S`. En el panel **Datos** debe aparecer `_Medidas` con las carpetas Base, Avanzadas y Tendencias.
+2. Claude responde con los valores de control: **Total Viajes 6,200**, **% Viajes Eléctricos 34.1%** y **Var. % Viajes vs AA +9.5%** (2025 frente a 2024).
 
-> ![Tabla de Medidas y Carpetas de Despliegue](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-03-medidas.png)
-> * **Descripción:** Panel de datos con la tabla `_Medidas` y sus tres carpetas: Base, Avanzadas y Tendencias.
+3. Volver a la **Vista de informe** (primer icono de la barra izquierda) y, en el panel **Data**, expandir `_Medidas` y sus carpetas **Avanzadas**, **Base** y **Tendencias**.
+> ![Panel Data con la tabla _Medidas y sus carpetas](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-panel-medidas.png)
+
+4. Guardar con `Ctrl + S`.
+
+> **Fundamento de Ingeniería:**
+> Una tabla dedicada a medidas separa la lógica de cálculo de los datos, y las carpetas de visualización (*Display Folders*) agrupan las medidas por propósito. Las medidas de año anterior toman el **último año con datos del contexto** (`YEAR(MAX(...))`): sin filtros comparan 2025 contra 2024 en lugar de sumar todos los años. `CALCULATE` cambia el contexto de filtro, `USERELATIONSHIP` activa la relación inactiva solo dentro de la medida y `DIVIDE` evita errores por división entre cero.
 
 <!--CELL-->
 
 ## **Prompt 4. Diseño Institucional y Página Base "Resumen"**
 
-El diseño **se construye una sola vez** en "Resumen" (panel lateral, 5 segmentadores, cabecera y tarjeta de KPIs) y después **se duplica la página** para las otras dos.
+El diseño se construye una sola vez en "Resumen" (panel lateral, 5 segmentadores, cabecera y tarjeta de KPIs) y después se duplica la página para las otras dos.
 
-### **Antes del prompt:**
-1. **Diseño → Importar tema** → seleccionar `Datos_Fuente\Tema_EcoBici.json`.
-2. `Ctrl + S`.
+1. En Power BI, abrir la pestaña **Design** (*Diseño*) y pulsar **Import theme** (*Importar tema*).
+> ![Pestaña Design con la opción Import theme](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-importar-tema.png)
 
+2. Navegar a la carpeta `Datos_Fuente`, seleccionar `Tema_EcoBici.json` y pulsar **Abrir**.
+> ![Selección del archivo Tema_EcoBici.json](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-seleccionar-tema.png)
+
+3. Confirmar el mensaje **File successfully added** con **Got it** y guardar con `Ctrl + S`.
+> ![Confirmación de tema importado](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-tema-aplicado.png)
+
+4. En el mismo chat de Claude, pegar el prompt:
 ```text
 Ahora el informe. Usa solo la herramienta de archivos sobre la carpeta EcoBici_Lima.Report\definition del proyecto (búscala con la herramienta de archivos; lee solo pages\pages.json y el page.json existente). Reglas PBIR para este y los próximos prompts: cada visual va en pages\<pagina>\visuals\<nombre>\visual.json con "$schema" visualContainer 2.x, "name" igual a la carpeta, "position" {x,y,z,width,height}. Columnas {"Column":{"Expression":{"SourceRef":{"Entity":"<tabla>"}},"Property":"<col>"}} y medidas {"Measure":{"Expression":{"SourceRef":{"Entity":"_Medidas"}},"Property":"<medida>"}}, queryRef "<tabla>.<campo>". Gráficos: título visible en negrita, sin subtítulo. Textboxes y shapes: sin fondo, borde, sombra ni título.
 1) La página existente: displayName "Resumen", 1920 x 1080, fondo #EEF2F6.
@@ -139,45 +149,60 @@ Ahora el informe. Usa solo la herramienta de archivos sobre la carpeta EcoBici_L
 Responde solo con "Listo".
 ```
 
-### **Protocolo de Sincronización:**
-1. En Power BI pulsar **Apply external changes** (*Aplicar cambios externos*) en la barra que aparece arriba del lienzo. Si un visual muestra error, pega el mensaje en el chat con: *"Corrige solo ese visual"*.
-2. Comprobar que los 5 segmentadores aparecen en **Ver → Sincronizar segmentaciones**.
-3. Clic derecho en la pestaña "Resumen" → **Duplicar página** (dos veces). Renombrar las copias como **Análisis de Uso** y **Tendencias**. Así el panel, los segmentadores sincronizados, la cabecera y la tarjeta de KPIs quedan en las 3 páginas.
-4. `Ctrl + S`.
+5. Cuando Claude responda "Listo", Power BI muestra la barra *"This project's files were changed externally"*. Pulsar **Apply external changes** (*Aplicar cambios externos*).
+> ![Barra Apply external changes en Power BI](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-aplicar-cambios-externos.png)
 
-> ![Maquetación Base del Lienzo y Panel Lateral](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-04-diseno-base.png)
-> * **Descripción:** Estructura base con el panel lateral azul oscuro de 300 px, los 5 segmentadores desplegables y la cabecera ejecutiva.
+6. Si aparece el aviso **Overwrite your unsaved edits**, pulsar **Apply external changes** (había algún cambio sin guardar en Power BI).
+> ![Aviso Overwrite your unsaved edits](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-sobrescribir-cambios.png)
+
+7. Revisar la página: panel lateral azul con los 5 segmentadores, cabecera y tarjeta de KPIs con los valores completos (6,200 y no 6K).
+> ![Página base Resumen con panel lateral, cabecera y KPIs](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-04-diseno-base.png)
+
+8. Seleccionar el segmentador **Año** y abrir **View → Sync slicers** (*Ver → Sincronizar segmentaciones*). Las tres páginas deben aparecer marcadas.
+> ![Panel Sync slicers con el segmentador Año sincronizado](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-sincronizar-segmentadores.png)
+
+9. Clic derecho sobre la pestaña **Resumen** → **Duplicate** (*Duplicar*). Repetir una segunda vez.
+> ![Menú contextual de la pestaña con la opción Duplicate](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-duplicar-pagina.png)
+
+10. Doble clic sobre cada copia para renombrarlas como **Análisis de Uso** y **Tendencias**, y guardar con `Ctrl + S`.
+> ![Pestañas Resumen, Análisis de Uso y Tendencias](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-pestanas.png)
+
+> **Fundamento de Ingeniería:**
+> En formato PBIR cada página es una carpeta y cada visual un archivo `visual.json`; Claude escribe esos archivos y Power BI los recarga con **Apply external changes**. El tema JSON centraliza colores, tipografías, bordes y sombras para todos los visuales. El `syncGroup` vincula los segmentadores de distintas páginas: al duplicar la página, las copias conservan el mismo grupo y el filtro se comparte en todo el informe.
 
 <!--CELL-->
 
 ## **Prompt 5. Página: Resumen Operacional**
 
-La cabecera y los KPIs ya existen. Solo faltan los cuatro gráficos. Guardar con `Ctrl + S` antes de pegar.
+1. Ir a la página **Resumen** y guardar con `Ctrl + S`.
 
+2. En el mismo chat, pegar el prompt:
 ```text
 En la página "Resumen" crea (mismas reglas PBIR; no leas otros archivos salvo pages.json):
-1) lineChart "lineasMes" x324 y305 w1032 h360 "Viajes por mes · 2024 vs 2025": Category dimFecha[Mes], Series dimFecha[Anio], Y Total Viajes; filtro del visual dimFecha[Anio] in (2024, 2025); líneas de 3 px con marcadores.
+1) lineChart "lineasMes" x324 y305 w1032 h360 "Viajes por mes · 2024 vs 2025": Category dimFecha[Mes], Series dimFecha[Anio], Y Total Viajes; filtro del visual dimFecha[Anio] in (2024, 2025); líneas de 3 px con marcadores; color de 2024 #1B4965 y de 2025 #F6AE2D.
 2) donutChart "donaMembresia" x1380 y305 w516 h360 "Viajes por tipo de membresía": Category dimUsuarios[TipoMembresia], Y Total Viajes; leyenda abajo; etiquetas en % del total; sin valor central ("centerValue" show false).
 3) barChart "topEstaciones" x324 y689 w774 h367 "Top 10 estaciones de origen por viajes": Category dimEstaciones[NombreEstacion], Y Total Viajes; filtro TopN 10 por Total Viajes; barras #1B4965; etiquetas de datos; orden descendente.
 4) azureMap "mapaEstaciones" x1122 y689 w774 h367 "Estaciones · tamaño según viajes de origen": Category dimEstaciones[NombreEstacion], Y dimEstaciones[Latitud] y X dimEstaciones[Longitud] con Aggregation Function 1 (promedio), Size Total Viajes; burbujas #F6AE2D.
 Responde solo con "Listo".
 ```
 
-> **Si el Top 10 no queda aplicado:** seleccionar el gráfico de barras → panel **Filtros** → `NombreEstacion` → **N superior** → Mostrar **10** → arrastrar `Total Viajes` a *Por valor* → **Aplicar filtro**.
+3. Pulsar **Apply external changes** en Power BI.
 
-### **Protocolo de Sincronización:**
-Pulsar **Apply external changes** (*Aplicar cambios externos*) en Power BI y luego `Ctrl + S`.
-*(Azure Maps requiere tener la sesión iniciada en Power BI Desktop con una cuenta institucional o de trabajo).*
+4. Revisar la página terminada y guardar con `Ctrl + S`.
+> ![Página Resumen Operacional terminada](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-05-resumen.png)
 
-> ![Página de Resumen Operacional en Power BI](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-05-resumen.png)
-> * **Descripción:** Página Resumen Operacional: tarjeta de KPIs, líneas 2024 vs 2025, dona de membresías, ranking de estaciones y mapa con Azure Maps.
+5. Si el gráfico de barras muestra todas las estaciones: seleccionarlo → panel **Filters** → `NombreEstacion` → **Top N** → Mostrar **10** → arrastrar `Total Viajes` a *By value* → **Apply filter**.
+
+> **Fundamento de Ingeniería:**
+> El filtro de nivel de visual (2024 y 2025) solo afecta a ese gráfico, sin tocar el resto de la página. El filtro **Top N** se evalúa contra una medida, por lo que el ranking se recalcula con cada segmentador. En el mapa, latitud y longitud se agregan como **promedio**: si se sumaran, una estación con varias filas quedaría fuera de su ubicación real. Azure Maps requiere tener la sesión iniciada en Power BI Desktop.
 
 <!--CELL-->
 
 ## **Prompt 6. Página: Análisis de Uso**
 
-La página ya existe como copia de "Resumen". El prompt cambia textos y KPIs, quita los gráficos copiados y crea los cinco nuevos. Guardar con `Ctrl + S` antes de pegar.
+1. Ir a la página **Análisis de Uso** y guardar con `Ctrl + S`.
 
+2. En el mismo chat, pegar el prompt:
 ```text
 En la página "Análisis de Uso" (copia de Resumen; búscala en pages.json, lista sus visuales y lee solo los que modifiques; no toques panel ni slicers):
 1) Título: "EcoBici Lima · Análisis de Uso". Subtítulo: "Patrones de demanda por hora, mes, zona, usuarios y estaciones".
@@ -192,18 +217,21 @@ En la página "Análisis de Uso" (copia de Resumen; búscala en pages.json, list
 Responde solo con "Listo".
 ```
 
-### **Protocolo de Sincronización:**
-Pulsar **Apply external changes** (*Aplicar cambios externos*) en Power BI y luego `Ctrl + S`.
+3. Pulsar **Apply external changes** en Power BI.
 
-> ![Página de Análisis de Uso en Power BI](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-06-analisis-uso.png)
-> * **Descripción:** Página Análisis de Uso con distribución horaria, combinado viajes vs duración, apertura demográfica y tabla de salidas vs llegadas por estación.
+4. Revisar la página y guardar con `Ctrl + S`. En la tabla, la columna **Llegadas** debe tener valores distintos de **Salidas**.
+> ![Página Análisis de Uso terminada](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-06-analisis-uso.png)
+
+> **Fundamento de Ingeniería:**
+> Como la página es una copia de Resumen, el panel lateral y los segmentadores sincronizados se conservan; solo se reemplazan los textos, los KPIs y los gráficos. El gráfico combinado usa **dos ejes**: columnas para el volumen de viajes y línea para la duración en minutos, magnitudes con escalas distintas. La tabla compara la relación activa (salidas por estación de origen) con la inactiva activada por `USERELATIONSHIP` (llegadas por estación de destino).
 
 <!--CELL-->
 
 ## **Prompt 7. Página: Tendencias**
 
-Mismo procedimiento sobre la copia "Tendencias". Guardar con `Ctrl + S` antes de pegar.
+1. Ir a la página **Tendencias** y guardar con `Ctrl + S`.
 
+2. En el mismo chat, pegar el prompt:
 ```text
 En la página "Tendencias" (copia de Resumen; mismo procedimiento que en Análisis de Uso):
 1) Título: "EcoBici Lima · Tendencias". Subtítulo: "Evolución mensual 2023-2025: volumen, ritmo de crecimiento y composición".
@@ -217,34 +245,40 @@ En la página "Tendencias" (copia de Resumen; mismo procedimiento que en Anális
 Responde solo con "Listo".
 ```
 
-### **Protocolo de Sincronización:**
-Pulsar **Apply external changes** (*Aplicar cambios externos*) en Power BI y luego `Ctrl + S`.
+3. Pulsar **Apply external changes** en Power BI.
 
-> ![Página de Tendencias en Power BI](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-07-tendencias.png)
-> * **Descripción:** Página Tendencias con la serie mensual y su media móvil de 3 meses, curvas acumuladas por año, mezcla de flota y viajes por trimestre.
+4. Revisar la página y guardar con `Ctrl + S`.
+> ![Página Tendencias terminada](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-07-tendencias.png)
+
+> **Fundamento de Ingeniería:**
+> La **media móvil de 3 meses** suaviza la variación mensual para mostrar la tendencia de fondo. El **acumulado del año** (`TOTALYTD`) reinicia en enero, por eso cada año es una curva que crece. Las columnas **100 % apiladas** muestran la proporción (eléctricas frente a mecánicas) y no el volumen, lo que permite comparar años con distinta cantidad de viajes.
 
 <!--CELL-->
 
 ## **Validación Técnica Integral y Control de Calidad**
 
-1. **Persistencia de filtros:** elegir un valor en los segmentadores y cambiar de página; la selección debe mantenerse en las tres.
-2. **Relación inactiva:** en *Análisis de Uso*, la columna `Llegadas` debe dar valores distintos de `Salidas` (usa `USERELATIONSHIP` con la estación de destino).
-3. **Persistencia del proyecto:** `Ctrl + S`. La carpeta `EcoBici_Lima.Report` contiene las tres páginas en formato PBIR.
+1. En cualquier página, abrir el segmentador **Año** y seleccionar **2024**.
+> ![Segmentador Año desplegado](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-validar-filtro.png)
 
-> ![Reporte Multi-página Completo en Funcionamiento](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-08-validacion-filtros.png)
-> * **Descripción:** Informe con el filtro Año = 2024 aplicado desde otra página: los KPIs y gráficos de Resumen respetan la selección sincronizada.
+2. Cambiar a otra página: el segmentador debe mostrar **2024** y los KPIs y gráficos deben reflejar solo ese año (por ejemplo, Total Viajes 2,100).
+> ![Filtro 2024 sincronizado en la página Resumen](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-08-validacion-filtros.png)
+
+3. Pasar el cursor sobre el segmentador y pulsar el icono de borrador (**Clear selections**) para quitar el filtro.
+
+4. En **Análisis de Uso**, comprobar que la columna **Llegadas** de la tabla da valores distintos de **Salidas**.
+
+5. Guardar con `Ctrl + S`. La carpeta `EcoBici_Lima.Report` contiene las tres páginas en formato PBIR.
+
+> **Fundamento de Ingeniería:**
+> Validar el filtrado cruzado confirma que el `syncGroup` funciona en las tres páginas y que todas las medidas responden al contexto de filtro. La diferencia entre salidas y llegadas confirma que la relación inactiva se activa correctamente con `USERELATIONSHIP`.
 
 <!--CELL-->
 
-## **Mensajes de Rescate (en el mismo chat)**
+## **Mensajes de Rescate e Incidencias**
 
-* **Un visual muestra error en Power BI:** *"El visual <nombre> de la página <página> da este error: <pega el error>. Corrige solo ese visual."*
-* **Una medida da un valor raro:** *"La medida <nombre> devuelve <qué ves> y debería <qué esperas>. Corrígela sin tocar las demás."*
+* **Un visual muestra error en Power BI:** escribir en el chat *"El visual <nombre> de la página <página> da este error: <pega el error>. Corrige solo ese visual."*
+* **Una medida da un valor raro:** escribir *"La medida <nombre> devuelve <qué ves> y debería <qué esperas>. Corrígela sin tocar las demás."*
 * **Claude empieza a leer todos los archivos del informe:** pulsar **Stop** y escribir *"No leas más archivos; escribe directamente los visuales."*
-
-## **Incidencias Frecuentes**
-
 * **Claude responde que no tiene herramientas de Power BI:** revisar **Ajustes → Desarrollador** (*Running*) y que no estén desactivadas en el icono de herramientas del chat.
-* **Aparece "Overwrite your unsaved edits" al aplicar:** había cambios sin guardar en Power BI. Pulsar **Apply external changes**; para evitarlo, guardar con `Ctrl + S` antes de pegar cada prompt.
 * **Los cambios de Claude desaparecieron:** se guardó en Power BI mientras Claude escribía. Repetir el prompt y pulsar **Apply external changes** antes de guardar.
 * **Azure Maps en blanco:** iniciar sesión en Power BI Desktop con cuenta institucional o de trabajo. Sin cuenta: cambiar el visual a *Gráfico de dispersión* con `Longitud` en X y `Latitud` en Y.
