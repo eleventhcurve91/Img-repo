@@ -20,7 +20,7 @@ Conéctate por MCP al informe de Power BI Desktop que tengo abierto (EcoBici_Lim
 
 5. Verificar que Claude responde con el nombre del modelo y el puerto local de Analysis Services.
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > Power BI Desktop levanta en segundo plano una instancia local de Analysis Services en un puerto dinámico; el servidor MCP la localiza y se conecta a la base de datos tabular activa. Trabajar en un solo chat conserva el contexto (reglas, nombres del modelo, formato PBIR) y agrupar operaciones reduce el número de llamadas a las herramientas.
 
 <!--CELL-->
@@ -46,7 +46,7 @@ Responde con un resumen de calidad de datos en máximo 10 viñetas (problema →
    * El `Genero` con códigos (`M`, `F`) y vacíos (90 de 500 usuarios), que requiere el valor *No especificado*.
    * Las columnas sobrantes `Notas` y `RegistroInterno`.
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > Los archivos `.xlsx` son binarios y el servidor `archivos` solo lee texto; por eso el prompt entrega su estructura y Claude perfila directamente los CSV. Detectar los problemas de calidad antes de modelar evita reprocesar tablas en Power Query.
 
 <!--CELL-->
@@ -87,7 +87,7 @@ Si algo falla, corrígelo tú. Responde solo con: filas de cada tabla y relacion
 
 6. Guardar con `Ctrl + S`.
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > El esquema en estrella separa los **hechos** (`fct`, cada viaje) de las **dimensiones** (`dim`: quién, qué, dónde y cuándo). Las relaciones `1:*` propagan el filtro desde la dimensión hacia los hechos. Entre dos tablas solo puede existir una relación activa; la de estación de destino queda inactiva y se activa dentro de una medida con `USERELATIONSHIP`. Marcar `dimFecha` como tabla de fechas habilita la inteligencia de tiempo (`TOTALYTD`, `DATEADD`, `DATESINPERIOD`), y el parámetro `RutaDatos` permite reubicar la carpeta de datos cambiando un solo valor.
 
 <!--CELL-->
@@ -132,7 +132,7 @@ Si "Eléctrica" no coincide con los valores de dimBicicletas[Tipo], ajústalo. R
 
 4. Guardar con `Ctrl + S` (no hace falta cerrar Power BI).
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > Una tabla dedicada separa la lógica de cálculo de los datos, y las carpetas agrupan las medidas por propósito. Las medidas de año anterior toman el **último año con datos del contexto** (`YEAR(MAX(...))`): sin filtros comparan 2025 contra 2024 en lugar de sumar todos los años. `CALCULATE` modifica el contexto de filtro, `USERELATIONSHIP` activa la relación inactiva solo dentro de la medida y `DIVIDE` evita errores por división entre cero.
 
 <!--CELL-->
@@ -190,7 +190,7 @@ Responde solo con "Listo".
 10. Doble clic sobre cada copia para renombrarlas como **Análisis de Uso** y **Tendencias**, y guardar con `Ctrl + S`.
 > ![Pestañas Resumen, Análisis de Uso y Tendencias](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/paso-pestanas.png)
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > En formato PBIR cada página es una carpeta y cada visual un archivo `visual.json`: Claude escribe esos archivos con el servidor `archivos` y Power BI los incorpora con **Apply external changes**, sin cerrar el programa. El tema JSON centraliza colores, tipografías, bordes y sombras de todos los visuales. El `syncGroup` vincula los segmentadores de distintas páginas: al duplicar la página, las copias conservan el mismo grupo y el filtro se comparte en todo el informe.
 
 <!--CELL-->
@@ -220,7 +220,7 @@ Responde solo con "Listo".
 
 5. Si el gráfico de barras muestra todas las estaciones, aplicar el filtro manualmente: seleccionarlo → panel **Filters** → `NombreEstacion` → **Top N** → Mostrar **10** → arrastrar `Total Viajes` a *By value* → **Apply filter**.
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > El filtro de nivel de visual (2024 y 2025) solo afecta a ese gráfico. El filtro **Top N** se evalúa contra una medida, por lo que el ranking se recalcula con cada segmentador. En el mapa, latitud y longitud se agregan como **promedio**: si se sumaran, una estación con varias filas quedaría fuera de su ubicación real. Azure Maps requiere tener la sesión iniciada en Power BI Desktop.
 
 <!--CELL-->
@@ -253,7 +253,7 @@ Responde solo con "Listo".
 4. Revisar la página y guardar con `Ctrl + S`.
 > ![Página Análisis de Uso terminada](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-06-analisis-uso.png)
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > Al partir de una copia, el panel lateral y los segmentadores sincronizados se conservan sin reescribirse. El gráfico combinado usa **dos ejes**: columnas para el volumen de viajes y línea para la duración en minutos, magnitudes con escalas distintas. La tabla contrasta la relación activa (salidas por estación de origen) con la inactiva activada por `USERELATIONSHIP` (llegadas por estación de destino).
 
 <!--CELL-->
@@ -285,7 +285,7 @@ Responde solo con "Listo".
 4. Revisar la página y guardar con `Ctrl + S`.
 > ![Página Tendencias terminada](https://raw.githubusercontent.com/eleventhcurve91/Img-repo/main/claude-free/free-07-tendencias.png)
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > La **media móvil de 3 meses** suaviza la variación mensual para mostrar la tendencia de fondo. El **acumulado del año** (`TOTALYTD`) se reinicia en enero, por eso cada año es una curva creciente. Las columnas **100 % apiladas** muestran proporciones (eléctricas frente a mecánicas) y no volumen, lo que permite comparar años con distinta cantidad de viajes.
 
 <!--CELL-->
@@ -312,7 +312,7 @@ Concluida la construcción programática, se ejecutan las pruebas de integració
 
 5. Guardar con `Ctrl + S`. La carpeta `EcoBici_Lima.Report` contiene las tres páginas en formato PBIR, preparadas para control de versiones o despliegue en Fabric / Power BI Service.
 
-> **Fundamento de Ingeniería:**
+> **Concepto clave:**
 > Validar el filtrado cruzado confirma que el `syncGroup` funciona en las tres páginas y que todas las medidas responden al contexto de filtro. La diferencia entre salidas y llegadas confirma que la relación inactiva se activa correctamente con `USERELATIONSHIP`.
 
 <!--CELL-->
